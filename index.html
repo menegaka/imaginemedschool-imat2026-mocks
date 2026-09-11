@@ -2091,21 +2091,13 @@ function buildAnalyticsPayload(completionStatus){
   };
 }
 async function submitResultsAnalytics(completionStatus="completed"){
-  if(location.protocol==="file:") return;
+  if(location.protocol==="file:") return false;
   const payload=buildAnalyticsPayload(completionStatus);
-  const body=new URLSearchParams();
-  Object.entries(payload).forEach(([k,v])=>body.append(k,String(v)));
-  try{
-    const response=await fetch("/",{
-      method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded"},
-      body:body.toString()
-    });
-    if(!response.ok) throw new Error("Netlify Forms HTTP "+response.status);
-    return;
-  }catch(e){
-    console.warn("Analytics fetch submission failed; using native Netlify form fallback",e);
-  }
+
+  // Use the statically detected Netlify form already present in the page.
+  // Submitting that exact form (to a hidden iframe) is more reliable than
+  // a fetch-only submission, especially when the page immediately switches
+  // to the results screen.
   try{
     let frame=document.getElementById("netlifyAnalyticsTarget");
     if(!frame){
@@ -2115,25 +2107,69 @@ async function submitResultsAnalytics(completionStatus="completed"){
       frame.style.cssText="position:absolute;width:1px;height:1px;border:0;left:-9999px;top:-9999px";
       document.body.appendChild(frame);
     }
-    const form=document.createElement("form");
+
+    const formName=String(payload["form-name"]||TEST_META.resultForm||"imat-mock-results");
+    const form=document.querySelector(`form[name="${CSS.escape(formName)}"]`);
+    if(!form) throw new Error("Detected Netlify form not found: "+formName);
+
+    form.target="netlifyAnalyticsTarget";
     form.method="POST";
     form.action="/";
-    form.target="netlifyAnalyticsTarget";
-    form.style.display="none";
+
     Object.entries(payload).forEach(([k,v])=>{
-      const input=document.createElement("input");
-      input.type="hidden"; input.name=k; input.value=String(v);
-      form.appendChild(input);
+      if(k==="form-name") return;
+      let input=form.querySelector(`[name="${CSS.escape(k)}"]`);
+      if(!input){
+        input=document.createElement("input");
+        input.type="hidden";
+        input.name=k;
+        form.appendChild(input);
+      }
+      input.value=String(v);
     });
-    document.body.appendChild(form);
-    form.submit();
-    setTimeout(()=>form.remove(),2000);
+
+    // Ensure the active form's honeypot is blank.
+    const hp=form.querySelector('[name="analytics-bot-field"]');
+    if(hp) hp.value="";
+
+    await new Promise((resolve,reject)=>{
+      let done=false;
+      const finish=(ok)=>{
+        if(done) return;
+        done=true;
+        frame.removeEventListener("load",onload);
+        clearTimeout(timer);
+        ok ? resolve() : reject(new Error("Netlify form submission timeout"));
+      };
+      const onload=()=>finish(true);
+      const timer=setTimeout(()=>finish(false),3500);
+      frame.addEventListener("load",onload,{once:true});
+      HTMLFormElement.prototype.submit.call(form);
+    });
+
+    return true;
   }catch(e){
-    console.warn("Native Netlify Forms fallback failed",e);
+    console.warn("Native Netlify Forms submission failed; trying fetch fallback",e);
+  }
+
+  // Fallback for unusual browsers / iframe restrictions.
+  try{
+    const body=new URLSearchParams();
+    Object.entries(payload).forEach(([k,v])=>body.append(k,String(v)));
+    const response=await fetch("/",{
+      method:"POST",
+      headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:body.toString(),
+      keepalive:true
+    });
+    if(!response.ok) throw new Error("Netlify Forms HTTP "+response.status);
+    return true;
+  }catch(e){
+    console.warn("Netlify Forms fetch fallback failed",e);
+    return false;
   }
 }
-
-function submitExam(auto=false){
+async function submitExam(auto=false){
   if(!auto) collectPreSubmitInputs();
   flushQuestionTime();
   closeModal();
@@ -2144,8 +2180,8 @@ function submitExam(auto=false){
   activeQuestionStartedAt=null;
   saveState();
   saveCurrentResultToHistory();
-  submitResultsAnalytics(auto ? "time-expired" : "completed");
-  recordLiveLeaderboardResult();
+  await submitResultsAnalytics(auto ? "time-expired" : "completed");
+  await recordLiveLeaderboardResult();
   document.getElementById("examScreen").style.display="none";
   document.getElementById("timerBox").classList.add("hidden");
   document.getElementById("resultScreen").style.display="block";
