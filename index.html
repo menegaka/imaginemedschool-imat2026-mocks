@@ -2180,12 +2180,25 @@ async function submitExam(auto=false){
   activeQuestionStartedAt=null;
   saveState();
   saveCurrentResultToHistory();
-  await submitResultsAnalytics(auto ? "time-expired" : "completed");
-  await recordLiveLeaderboardResult();
+
+  // Switch to the results view immediately. Do not make the student wait
+  // for Netlify Forms or the live-ranking backend before hiding the quiz.
   document.getElementById("examScreen").style.display="none";
   document.getElementById("timerBox").classList.add("hidden");
   document.getElementById("resultScreen").style.display="block";
-  renderResults(); window.scrollTo({top:0,behavior:"smooth"});
+  renderResults();
+  window.scrollTo({top:0,behavior:"smooth"});
+
+  // Persist analytics and leaderboard data in the background. The result
+  // screen is already visible, so network latency cannot expose the quiz UI.
+  const analyticsPromise=submitResultsAnalytics(auto ? "time-expired" : "completed")
+    .catch(e=>{console.warn("Analytics submission failed",e);return false;});
+  const leaderboardPromise=recordLiveLeaderboardResult()
+    .catch(e=>{console.warn("Live ranking record failed",e);return false;});
+
+  // Once the background calls finish, refresh the ranking cards so the
+  // just-submitted participant is reflected without delaying the results.
+  Promise.allSettled([analyticsPromise,leaderboardPromise]).then(()=>loadCommunityRanking());
 }
 function calcResults(){
   let correct=0,wrong=0,blank=0;
