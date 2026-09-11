@@ -1365,7 +1365,7 @@ h1 em{font-style:normal;color:var(--teal)}
 </div>
 
 
-<form name="imat-mock-results" method="POST" data-netlify="true" data-netlify-honeypot="analytics-bot-field" style="display:none" aria-hidden="true">
+<form name="imat-mock-results" method="POST" action="/" data-netlify="true" data-netlify-honeypot="analytics-bot-field" style="display:none" aria-hidden="true">
   <input type="hidden" name="form-name" value="imat-mock-results">
   <input name="analytics-bot-field">
   <input name="participant_id">
@@ -1399,7 +1399,7 @@ h1 em{font-style:normal;color:var(--teal)}
   <textarea name="answer_changes_json"></textarea>
   <textarea name="flags_json"></textarea>
 </form>
-<form name="imat-mock-02-results" method="POST" data-netlify="true" data-netlify-honeypot="analytics-bot-field" style="display:none" aria-hidden="true">
+<form name="imat-mock-02-results" method="POST" action="/" data-netlify="true" data-netlify-honeypot="analytics-bot-field" style="display:none" aria-hidden="true">
   <input type="hidden" name="form-name" value="imat-mock-02-results">
   <input name="analytics-bot-field">
   <input name="participant_id">
@@ -1433,7 +1433,7 @@ h1 em{font-style:normal;color:var(--teal)}
   <textarea name="answer_changes_json"></textarea>
   <textarea name="flags_json"></textarea>
 </form>
-<form name="imat-mock-03-results" method="POST" data-netlify="true" data-netlify-honeypot="analytics-bot-field" style="display:none" aria-hidden="true">
+<form name="imat-mock-03-results" method="POST" action="/" data-netlify="true" data-netlify-honeypot="analytics-bot-field" style="display:none" aria-hidden="true">
   <input type="hidden" name="form-name" value="imat-mock-03-results">
   <input name="analytics-bot-field">
   <input name="participant_id">
@@ -2092,18 +2092,44 @@ function buildAnalyticsPayload(completionStatus){
 }
 async function submitResultsAnalytics(completionStatus="completed"){
   if(location.protocol==="file:") return;
+  const payload=buildAnalyticsPayload(completionStatus);
+  const body=new URLSearchParams();
+  Object.entries(payload).forEach(([k,v])=>body.append(k,String(v)));
   try{
-    const payload=buildAnalyticsPayload(completionStatus);
-    const body=new URLSearchParams();
-    Object.entries(payload).forEach(([k,v])=>body.append(k,String(v)));
-    await fetch("/",{
+    const response=await fetch("/",{
       method:"POST",
       headers:{"Content-Type":"application/x-www-form-urlencoded"},
-      body:body.toString(),
-      keepalive:true
+      body:body.toString()
     });
+    if(!response.ok) throw new Error("Netlify Forms HTTP "+response.status);
+    return;
   }catch(e){
-    console.warn("Analytics submission failed",e);
+    console.warn("Analytics fetch submission failed; using native Netlify form fallback",e);
+  }
+  try{
+    let frame=document.getElementById("netlifyAnalyticsTarget");
+    if(!frame){
+      frame=document.createElement("iframe");
+      frame.name="netlifyAnalyticsTarget";
+      frame.id="netlifyAnalyticsTarget";
+      frame.style.cssText="position:absolute;width:1px;height:1px;border:0;left:-9999px;top:-9999px";
+      document.body.appendChild(frame);
+    }
+    const form=document.createElement("form");
+    form.method="POST";
+    form.action="/";
+    form.target="netlifyAnalyticsTarget";
+    form.style.display="none";
+    Object.entries(payload).forEach(([k,v])=>{
+      const input=document.createElement("input");
+      input.type="hidden"; input.name=k; input.value=String(v);
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(()=>form.remove(),2000);
+  }catch(e){
+    console.warn("Native Netlify Forms fallback failed",e);
   }
 }
 
