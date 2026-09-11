@@ -2090,86 +2090,42 @@ function buildAnalyticsPayload(completionStatus){
     flags_json:JSON.stringify(Object.keys(state.flags||{}).filter(k=>state.flags[k]))
   };
 }
-async function submitResultsAnalytics(completionStatus="completed"){
-  if(location.protocol==="file:") return false;
+let analyticsSubmissionPromise = null;
+
+function submitResultsAnalytics(completionStatus="completed"){
+  if(location.protocol==="file:") return Promise.resolve(false);
+  if(analyticsSubmissionPromise) return analyticsSubmissionPromise;
+
   const payload=buildAnalyticsPayload(completionStatus);
-
-  // Use the statically detected Netlify form already present in the page.
-  // Submitting that exact form (to a hidden iframe) is more reliable than
-  // a fetch-only submission, especially when the page immediately switches
-  // to the results screen.
-  try{
-    let frame=document.getElementById("netlifyAnalyticsTarget");
-    if(!frame){
-      frame=document.createElement("iframe");
-      frame.name="netlifyAnalyticsTarget";
-      frame.id="netlifyAnalyticsTarget";
-      frame.style.cssText="position:absolute;width:1px;height:1px;border:0;left:-9999px;top:-9999px";
-      document.body.appendChild(frame);
+  analyticsSubmissionPromise=(async()=>{
+    try{
+      // Use ONE submission mechanism only. A single same-origin POST with
+      // keepalive avoids the iframe+fallback race that could create duplicate
+      // Netlify Form submissions when the iframe acknowledgement was delayed.
+      const body=new URLSearchParams();
+      Object.entries(payload).forEach(([k,v])=>body.append(k,String(v)));
+      const response=await fetch("/",{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:body.toString(),
+        keepalive:true,
+        credentials:"same-origin"
+      });
+      if(!response.ok) throw new Error("Netlify Forms HTTP "+response.status);
+      return true;
+    }catch(e){
+      console.warn("Netlify Forms submission failed",e);
+      return false;
     }
+  })();
 
-    const formName=String(payload["form-name"]||TEST_META.resultForm||"imat-mock-results");
-    const form=document.querySelector(`form[name="${CSS.escape(formName)}"]`);
-    if(!form) throw new Error("Detected Netlify form not found: "+formName);
-
-    form.target="netlifyAnalyticsTarget";
-    form.method="POST";
-    form.action="/";
-
-    Object.entries(payload).forEach(([k,v])=>{
-      if(k==="form-name") return;
-      let input=form.querySelector(`[name="${CSS.escape(k)}"]`);
-      if(!input){
-        input=document.createElement("input");
-        input.type="hidden";
-        input.name=k;
-        form.appendChild(input);
-      }
-      input.value=String(v);
-    });
-
-    // Ensure the active form's honeypot is blank.
-    const hp=form.querySelector('[name="analytics-bot-field"]');
-    if(hp) hp.value="";
-
-    await new Promise((resolve,reject)=>{
-      let done=false;
-      const finish=(ok)=>{
-        if(done) return;
-        done=true;
-        frame.removeEventListener("load",onload);
-        clearTimeout(timer);
-        ok ? resolve() : reject(new Error("Netlify form submission timeout"));
-      };
-      const onload=()=>finish(true);
-      const timer=setTimeout(()=>finish(false),3500);
-      frame.addEventListener("load",onload,{once:true});
-      HTMLFormElement.prototype.submit.call(form);
-    });
-
-    return true;
-  }catch(e){
-    console.warn("Native Netlify Forms submission failed; trying fetch fallback",e);
-  }
-
-  // Fallback for unusual browsers / iframe restrictions.
-  try{
-    const body=new URLSearchParams();
-    Object.entries(payload).forEach(([k,v])=>body.append(k,String(v)));
-    const response=await fetch("/",{
-      method:"POST",
-      headers:{"Content-Type":"application/x-www-form-urlencoded"},
-      body:body.toString(),
-      keepalive:true
-    });
-    if(!response.ok) throw new Error("Netlify Forms HTTP "+response.status);
-    return true;
-  }catch(e){
-    console.warn("Netlify Forms fetch fallback failed",e);
-    return false;
-  }
+  return analyticsSubmissionPromise;
 }
+let submitExamStarted = false;
+
 async function submitExam(auto=false){
+  if(submitExamStarted) return;
+  submitExamStarted = true;
   if(!auto) collectPreSubmitInputs();
   flushQuestionTime();
   closeModal();
