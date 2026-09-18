@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IMAT Readiness Challenge | ImagineMed School</title>
+  <meta name="description" content="How ready are you for IMAT 2026? Take the quick challenge and see your result!" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0f766e;
+      --primary-dark: #0d5c56;
+      --accent: #f59e0b;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 40%, #f8fafc 100%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .logo {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 28px 22px;
+      box-shadow: 0 10px 40px -12px rgba(15, 118, 110, 0.18);
+      border: 1px solid rgba(15, 118, 110, 0.08);
+    }
+
+    .step {
+      display: none;
+    }
+
+    .step.active {
+      display: block;
+      animation: fadeIn 0.35s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .question {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .question-desc {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 28px;
+    }
+
+    .slider-wrapper {
+      margin: 32px 0 12px;
+    }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(15, 118, 110, 0.4);
+      border: 3px solid white;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary);
+      cursor: pointer;
+      border: 3px solid white;
+      box-shadow: 0 4px 12px rgba(15, 118, 110, 0.4);
+    }
+
+    .score-display {
+      text-align: center;
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 8px 0 24px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: var(--text);
+      margin-top: 10px;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #1c1917;
+      margin-top: 10px;
+    }
+
+    .btn-accent:hover {
+      background: #d97706;
+    }
+
+    .result-emoji {
+      font-size: 3.5rem;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .result-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .result-score {
+      text-align: center;
+      font-size: 1.1rem;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .result-text {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .share-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .share-row .btn {
+      flex: 1;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 32px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #0f172a;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 400px) {
+      h1 { font-size: 1.5rem; }
+      .score-display { font-size: 2.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">ImagineMed School</div>
+      <h1>IMAT Readiness Challenge</h1>
+      <p class="subtitle">How ready are you really for IMAT 2026?</p>
+    </header>
+
+    <div class="card">
+      <!-- STEP 1: Slider -->
+      <div id="step1" class="step active">
+        <p class="question">Rate your readiness</p>
+        <p class="question-desc">From 1 (total panic) to 10 (ready to crush the IMAT)</p>
+
+        <div class="slider-wrapper">
+          <div class="slider-labels">
+            <span>1 · Panic</span>
+            <span>10 · Legend</span>
+          </div>
+          <input type="range" id="readiness" min="1" max="10" value="5" />
+        </div>
+
+        <div class="score-display" id="scoreDisplay">5</div>
+
+        <button class="btn btn-primary" onclick="showResult()">See my result</button>
+      </div>
+
+      <!-- STEP 2: Result -->
+      <div id="step2" class="step">
+        <div class="result-emoji" id="resultEmoji">🔥</div>
+        <div class="result-title" id="resultTitle">Title</div>
+        <div class="result-score" id="resultScore">Score: 5/10</div>
+        <p class="result-text" id="resultText">Result text</p>
+
+        <div class="actions">
+          <div class="share-row">
+            <button class="btn btn-secondary" onclick="copyResult()">📋 Copy</button>
+            <button class="btn btn-secondary" onclick="shareResult()">📤 Share</button>
+          </div>
+          <button class="btn btn-accent" onclick="challengeFriend()">⚡ Challenge a Friend</button>
+          <button class="btn btn-secondary" onclick="resetChallenge()">🔄 Try again</button>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      Made with 💚 by <a href="https://www.instagram.com/imaginemedschool/" target="_blank" rel="noopener">ImagineMed School</a>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast">Copied!</div>
+
+  <script>
+    const slider = document.getElementById('readiness');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+
+    slider.addEventListener('input', () => {
+      scoreDisplay.textContent = slider.value;
+    });
+
+    const results = {
+      1: {
+        emoji: "🆘",
+        title: "Emergency Mode",
+        text: "You're still at the 'what is IMAT?' stage. Don't panic… just start yesterday."
+      },
+      2: {
+        emoji: "😵",
+        title: "Barely Breathing",
+        text: "Your readiness is on life support. You need a serious plan and consistent work."
+      },
+      3: {
+        emoji: "😅",
+        title: "Hopeful Beginner",
+        text: "You've started, but you're still looking for Biology in the wrong book. Keep going!"
+      },
+      4: {
+        emoji: "😬",
+        title: "Almost Ready… ish",
+        text: "You're halfway there. Consistency and more focused practice will make the difference."
+      },
+      5: {
+        emoji: "😐",
+        title: "Solid Average",
+        text: "Not bad, not great. If you keep going like this, you'll stay average. Want better?"
+      },
+      6: {
+        emoji: "💪",
+        title: "Getting Dangerous",
+        text: "You're starting to become a real threat. Keep the momentum!"
+      },
+      7: {
+        emoji: "🔥",
+        title: "High Potential",
+        text: "You're at a strong level. With focused work you can climb even higher."
+      },
+      8: {
+        emoji: "🚀",
+        title: "Almost Unstoppable",
+        text: "You're very close to the top. A bit more work and you'll crush it."
+      },
+      9: {
+        emoji: "👑",
+        title: "Elite Contender",
+        text: "Few people reach this level. You're ready to fight for the highest ranks."
+      },
+      10: {
+        emoji: "🏆",
+        title: "IMAT Legend Status",
+        text: "You're ready to make the IMAT cry. Just don't forget to sleep before the exam."
+      }
+    };
+
+    function showResult() {
+      const score = parseInt(slider.value);
+      const data = results[score];
+
+      document.getElementById('resultEmoji').textContent = data.emoji;
+      document.getElementById('resultTitle').textContent = data.title;
+      document.getElementById('resultScore').textContent = `Score: ${score}/10`;
+      document.getElementById('resultText').textContent = data.text;
+
+      document.getElementById('step1').classList.remove('active');
+      document.getElementById('step2').classList.add('active');
+    }
+
+    function resetChallenge() {
+      document.getElementById('step2').classList.remove('active');
+      document.getElementById('step1').classList.add('active');
+      slider.value = 5;
+      scoreDisplay.textContent = 5;
+    }
+
+    function getShareText() {
+      const score = parseInt(slider.value);
+      const data = results[score];
+      return `I just took the IMAT Readiness Challenge by ImagineMed School!\n\n${data.emoji} ${data.title}\nScore: ${score}/10\n\nTry it yourself: https://imaginemedschool-imat2026-mocks.netlify.app/readiness.html`;
+    }
+
+    function copyResult() {
+      const text = getShareText();
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard!');
+      }).catch(() => {
+        showToast('Could not copy');
+      });
+    }
+
+    function shareResult() {
+      const text = getShareText();
+      if (navigator.share) {
+        navigator.share({
+          title: 'IMAT Readiness Challenge',
+          text: text
+        }).catch(() => {});
+      } else {
+        copyResult();
+      }
+    }
+
+    function challengeFriend() {
+      const text = `I challenge you to the IMAT Readiness Challenge by ImagineMed!\n\nHow ready are you for IMAT 2026?\n\n👉 https://imaginemedschool-imat2026-mocks.netlify.app/readiness.html`;
+      if (navigator.share) {
+        navigator.share({
+          title: 'Challenge a Friend – IMAT Readiness',
+          text: text
+        }).catch(() => {
+          navigator.clipboard.writeText(text).then(() => showToast('Challenge link copied!'));
+        });
+      } else {
+        navigator.clipboard.writeText(text).then(() => showToast('Challenge link copied!'));
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+  </script>
+</body>
+</html>
