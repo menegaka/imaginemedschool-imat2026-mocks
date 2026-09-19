@@ -329,7 +329,9 @@ input[type=range]:focus-visible{outline:3px solid var(--blue);outline-offset:4px
 
 <form name="imat-readiness-results" method="POST" action="/" data-netlify="true" data-netlify-honeypot="results-bot-field" hidden aria-hidden="true">
   <input type="text" name="readiness_score"><input type="text" name="verdict">
-  <input type="text" name="source"><input type="text" name="device"><input name="results-bot-field">
+  <input type="text" name="source"><input type="text" name="device">
+  <input type="text" name="timezone"><input type="text" name="language">
+  <input type="text" name="seconds_to_answer"><input name="results-bot-field">
 </form>
 
 <form name="imat-mock-updates" method="POST" action="/" data-netlify="true" data-netlify-honeypot="bot-field" hidden aria-hidden="true">
@@ -382,6 +384,16 @@ function trafficSource(){
   return "direct";
 }
 const SOURCE = trafficSource();
+const T_START = Date.now();
+
+function timeZone(){
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "unknown"; }
+  catch { return "unknown"; }
+}
+function language(){
+  try { return (navigator.language || (navigator.languages && navigator.languages[0]) || "unknown"); }
+  catch { return "unknown"; }
+}
 
 /* ---------- local memory: one vote per browser, keep their score ---------- */
 function loadLocal(){
@@ -578,7 +590,10 @@ function recordParticipation(score, verdict){
     readiness_score: String(score),
     verdict: verdict,
     source: SOURCE,
-    device: (window.innerWidth < 700 ? "mobile" : "desktop")
+    device: (window.innerWidth < 700 ? "mobile" : "desktop"),
+    timezone: timeZone(),
+    language: language(),
+    seconds_to_answer: String(Math.round((Date.now() - T_START) / 1000))
   }).toString();
   fetch('/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body})
     .catch(()=>{ /* never block the user */ });
